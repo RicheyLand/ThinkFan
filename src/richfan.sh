@@ -1,23 +1,27 @@
 #!/bin/bash
 
-args=("$@")									#	store arguments into the array
-ELEMENTS=${#args[@]}						#	get number of arguments
+args=("$@")										#	store arguments into the array
+ELEMENTS=${#args[@]}							#	get number of arguments
 
-if [ $ELEMENTS -eq 0 ]						#	no command line arguments
+resultC=($(sensors | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*C$' | tr '.' '\n' | grep -E '[0-9]$'))
+resultF=($(sensors -f | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*F$' | tr '.' '\n' | grep -E '[0-9]$'))
+
+fanState=$(cat /proc/acpi/ibm/fan | grep -E 'status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
+fanSpeed=$(cat /proc/acpi/ibm/fan | grep -E 'speed' | tr '\t' '\n' | grep -E '[0-9]{2,}')		#	parse fan speed value
+fanLevel=$(cat /proc/acpi/ibm/fan | grep -E 'level' | tr '\t' '\n' | grep -E '^[0-9]$')	#	parse fan level value
+
+if [ $ELEMENTS -eq 0 ]							#	no command line arguments
 then
-	resultC=($(sensors | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*C$' | tr '.' '\n' | grep -E '[0-9]$'))
-	resultF=($(sensors -f | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*F$' | tr '.' '\n' | grep -E '[0-9]$'))
-
 	count=${#resultC[@]}
 
 	echo 'Temperatures'
 	echo '------------'
 
 	for (( i=0;i<$count;i++)); do
-		valueC=${resultC[${i}]}				#	show core temparature in Celsius
-		valueF=${resultF[${i}]}				#	show core temparature in Fahrenheits
+		valueC=${resultC[${i}]}					#	show core temperature in Celsius
+		valueF=${resultF[${i}]}					#	show core temperature in Fahrenheits
 
-		if [ ! -z "$valueC" ]				#	check if something has been parsed
+		if [ ! -z "$valueC" ]					#	check if something has been parsed
 		then
 			echo "    Core $i:  $valueC°C ($valueF°F)"
 		fi
@@ -27,33 +31,27 @@ then
 	echo 'Fan information'
 	echo '---------------'
 
-	result=$(cat /proc/acpi/ibm/fan | grep -E 'status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
-
-	if [ ! -z "$result" ]					#	check if something has been parsed
+	if [ ! -z "$fanState" ]						#	check if something has been parsed
 	then
-		echo "    State:   $result"
+		echo "    State:   $fanState"
 	fi
 
-	result=$(cat /proc/acpi/ibm/fan | grep -E 'speed' | tr '\t' '\n' | grep -E '[0-9]{2,}')		#	parse fan speed value
-
-	if [ ! -z "$result" ]					#	check if something has been parsed
+	if [ ! -z "$fanSpeed" ]						#	check if something has been parsed
 	then
-		echo "    Speed:   $result RPM"
+		echo "    Speed:   $fanSpeed RPM"
 	fi
 
-	result=$(cat /proc/acpi/ibm/fan | grep -E 'level' | tr '\t' '\n' | grep -E '^[0-9]$')	#	parse fan level value
-
-	if [ ! -z "$result" ]					#	check if something has been parsed
+	if [ ! -z "$fanLevel" ]						#	check if something has been parsed
 	then
-		echo "    Level:   $result"
+		echo "    Level:   $fanLevel"
 	fi
 
 	exit 0
 fi
 
-for (( i=0;i<$ELEMENTS;i++)); do 			#	iterate through all command line arguments
-	argValue=${args[${i}]}					#	holds string value of actual argument in loop
-	reLevel='^[1-7]{1}$'					#	regex which will match fan level value in range from 1 to 7
+for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line arguments
+	argValue=${args[${i}]}						#	holds string value of actual argument in loop
+	reLevel='^[1-7]{1}$'						#	regex which will match fan level value in range from 1 to 7
 
 	if [ "$argValue" = "help" ] || [ "$argValue" = "-h" ] || [ "$argValue" = "-help" ] || [ "$argValue" = "--help" ]	#	show help information
 	then
@@ -61,12 +59,16 @@ for (( i=0;i<$ELEMENTS;i++)); do 			#	iterate through all command line arguments
 		echo '  RichFan - Fan control program for ThinkPad laptops'
 		echo
 		echo 'USAGE'
-		echo '  richfan       ->  show current temperatures and information about fan'
-		echo '  richfan help  ->  show help information'
-		echo '  richfan auto  ->  use automatic fan speed control'
-		echo '  richfan min   ->  set fan speed to minimum allowed value'
-		echo '  richfan max   ->  set fan speed to maximum allowed value'
-		echo '  richfan N     ->  set desired fan level in range from 0 to 7'
+		echo '  richfan        ->  show current temperatures and information about fan'
+		echo '  richfan help   ->  show help information'
+		echo '  richfan auto   ->  use automatic fan speed control'
+		echo '  richfan min    ->  set fan speed to minimum allowed value'
+		echo '  richfan max    ->  set fan speed to maximum allowed value'
+		echo '  richfan N      ->  set desired fan level in range from 0 to 7'
+		echo '  richfan temp   ->  print current temperatures'
+		echo '  richfan state  ->  print current fan state value'
+		echo '  richfan speed  ->  print current fan speed value'
+		echo '  richfan level  ->  print current fan level value'
 		echo
 		echo 'DEPENDENCIES'
 		echo '  Package lm-sensors is required for fan control'
@@ -98,10 +100,54 @@ for (( i=0;i<$ELEMENTS;i++)); do 			#	iterate through all command line arguments
 		exit 0
 	fi
 
-	if [[ $argValue =~ $reLevel ]]			#	set desired level of fan in range from 1 to 7
+	if [[ $argValue =~ $reLevel ]]				#	set desired level of fan in range from 1 to 7
 	then
 		echo level $argValue | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
 		exit 0
+	fi
+
+	if [ "$argValue" = "temp" ] || [ "$argValue" = "temperature" ]  || [ "$argValue" = "thermal" ]
+	then
+		count=${#resultC[@]}
+
+		for (( i=0;i<$count;i++)); do
+			valueC=${resultC[${i}]}				#	show core temperature in Celsius
+			valueF=${resultF[${i}]}				#	show core temperature in Fahrenheits
+
+			if [ ! -z "$valueC" ]				#	check if something has been parsed
+			then
+				echo "$valueC°C ($valueF°F)"
+			fi
+		done
+
+		exit 0
+	fi
+
+	if [ "$argValue" = "state" ] || [ "$argValue" = "status" ]
+	then
+		if [ ! -z "$fanState" ]					#	check if something has been parsed
+		then
+			echo "$fanState"
+			exit 0
+		fi
+	fi
+
+	if [ "$argValue" = "speed" ] || [ "$argValue" = "rate" ]
+	then
+		if [ ! -z "$fanSpeed" ]					#	check if something has been parsed
+		then
+			echo "$fanSpeed"
+			exit 0
+		fi
+	fi
+
+	if [ "$argValue" = "level" ]
+	then
+		if [ ! -z "$fanLevel" ]					#	check if something has been parsed
+		then
+			echo "$fanLevel"
+			exit 0
+		fi
 	fi
 done
 
