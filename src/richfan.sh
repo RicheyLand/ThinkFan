@@ -54,7 +54,7 @@ for (( i=0;i<$ELEMENTS;i++)); do 			#	iterate through all command line arguments
 		echo
 		echo 'DEPENDENCIES'
 		echo '  Package lm-sensors is required for fan control'
-		echo '  Linux kernel with thinkpad-acpi is required'
+		echo '  Linux kernel with thinkpad-acpi support is required'
 		echo
 		echo 'SETUP'
 		echo '  Open this file as a root: /etc/modprobe.d/thinkpad_acpi.conf'
