@@ -16,7 +16,11 @@ then
 	for (( i=0;i<$count;i++)); do
 		valueC=${resultC[${i}]}				#	show core temparature in Celsius
 		valueF=${resultF[${i}]}				#	show core temparature in Fahrenheits
-		echo "    Core $i:  $valueC°C ($valueF°F)"
+
+		if [ ! -z "$valueC" ]				#	check if something has been parsed
+		then
+			echo "    Core $i:  $valueC°C ($valueF°F)"
+		fi
 	done
 
 	echo
@@ -24,13 +28,25 @@ then
 	echo '---------------'
 
 	result=$(cat /proc/acpi/ibm/fan | grep -E 'status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
-	echo "    State:   $result"
+
+	if [ ! -z "$result" ]					#	check if something has been parsed
+	then
+		echo "    State:   $result"
+	fi
 
 	result=$(cat /proc/acpi/ibm/fan | grep -E 'speed' | tr '\t' '\n' | grep -E '[0-9]{2,}')		#	parse fan speed value
-	echo "    Speed:   $result RPM"
+
+	if [ ! -z "$result" ]					#	check if something has been parsed
+	then
+		echo "    Speed:   $result RPM"
+	fi
 
 	result=$(cat /proc/acpi/ibm/fan | grep -E 'level' | tr '\t' '\n' | grep -E '^[0-9]$')	#	parse fan level value
-	echo "    Level:   $result"
+
+	if [ ! -z "$result" ]					#	check if something has been parsed
+	then
+		echo "    Level:   $result"
+	fi
 
 	exit 0
 fi
@@ -67,21 +83,25 @@ for (( i=0;i<$ELEMENTS;i++)); do 			#	iterate through all command line arguments
 	if [ "$argValue" = "auto" ] || [ "$argValue" = "0" ]
 	then
 		echo level auto | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		exit 0
 	fi
 
 	if [ "$argValue" = "min" ]
 	then
 		echo level 1 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		exit 0
 	fi
 
 	if [ "$argValue" = "max" ]
 	then
 		echo level 7 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		exit 0
 	fi
 
 	if [[ $argValue =~ $reLevel ]]			#	set desired level of fan in range from 1 to 7
 	then
 		echo level $argValue | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		exit 0
 	fi
 done
 
