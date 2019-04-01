@@ -6,9 +6,9 @@ ELEMENTS=${#args[@]}							#	get number of arguments
 resultC=($(sensors | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*C$' | tr '.' '\n' | grep -E '[0-9]$'))
 resultF=($(sensors -f | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*F$' | tr '.' '\n' | grep -E '[0-9]$'))
 
-fanState=$(cat /proc/acpi/ibm/fan | grep -E 'status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
-fanSpeed=$(cat /proc/acpi/ibm/fan | grep -E 'speed' | tr '\t' '\n' | grep -E '[0-9]{2,}')		#	parse fan speed value
-fanLevel=$(cat /proc/acpi/ibm/fan | grep -E 'level' | tr '\t' '\n' | grep -E '^[0-9]$')	#	parse fan level value
+fanState=$(cat /proc/acpi/ibm/fan | grep -E '^status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
+fanSpeed=$(cat /proc/acpi/ibm/fan | grep -E '^speed' | tr '\t' '\n' | grep -E '[0-9]+')		#	parse fan speed value
+fanLevel=$(cat /proc/acpi/ibm/fan | grep -E '^level' | tr '\t' '\n' | grep -E '^[0-9]|auto$')	#	parse fan level value
 
 if [ $ELEMENTS -eq 0 ]							#	no command line arguments
 then
