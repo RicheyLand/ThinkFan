@@ -1,4 +1,4 @@
-# RichFan
+# ThinkFan
 Fan control program for ThinkPad laptops.
 
 Fan speed control is implemented as a Bash script.<br />
