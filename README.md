@@ -11,6 +11,7 @@ Only ThinkPad laptops are fully supported.
 * Temperature display.
 * Fan information display.
 * Fan speed control.
+* Fan timeout.
 
 ## Dependencies
 
