@@ -47,28 +47,29 @@ then
 	fi
 
 	exit 0
-fi
-
-for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line arguments
-	argValue=${args[${i}]}						#	holds string value of actual argument in loop
+elif [ $ELEMENTS -eq 1 ]						#	single command line argument
+then
+	argOne=${args[0]}							#	holds content of first command line argument
 	reLevel='^[1-7]{1}$'						#	regex which will match fan level value in range from 1 to 7
 
-	if [ "$argValue" = "help" ] || [ "$argValue" = "-h" ] || [ "$argValue" = "-help" ] || [ "$argValue" = "--help" ]	#	show help information
+	if [ "$argOne" = "help" ] || [ "$argOne" = "-h" ] || [ "$argOne" = "-help" ] || [ "$argOne" = "--help" ]	#	show help information
 	then
 		echo 'DESCRIPTION'
 		echo '  ThinkFan - Fan control program for ThinkPad laptops'
 		echo
 		echo 'USAGE'
-		echo '  thinkfan        ->  show current temperatures and information about fan'
-		echo '  thinkfan help   ->  show help information'
-		echo '  thinkfan auto   ->  use automatic fan speed control'
-		echo '  thinkfan min    ->  set fan speed to minimum allowed value'
-		echo '  thinkfan max    ->  set fan speed to maximum allowed value'
-		echo '  thinkfan N      ->  set desired fan level in range from 0 to 7'
-		echo '  thinkfan temp   ->  print current temperatures'
-		echo '  thinkfan state  ->  print current fan state value'
-		echo '  thinkfan speed  ->  print current fan speed value'
-		echo '  thinkfan level  ->  print current fan level value'
+		echo '  thinkfan            ->  show current temperatures and information about fan'
+		echo '  thinkfan help       ->  show help information'
+		echo '  thinkfan auto       ->  use automatic fan speed control'
+		echo '  thinkfan min        ->  set fan speed to minimum allowed value'
+		echo '  thinkfan max        ->  set fan speed to maximum allowed value'
+		echo '  thinkfan N          ->  set desired fan level in range from 0 to 7'
+		echo '  thinkfan temp       ->  print current temperatures'
+		echo '  thinkfan state      ->  print current fan state value'
+		echo '  thinkfan speed      ->  print current fan speed value'
+		echo '  thinkfan level      ->  print current fan level value'
+		echo '  thinkfan timeout    ->  disable fan timeout'
+		echo '  thinkfan timeout N  ->  set fan timeout in range from 0 to 120 seconds'
 		echo
 		echo 'DEPENDENCIES'
 		echo '  Package lm-sensors is required for fan control'
@@ -82,31 +83,31 @@ for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line argument
 		exit 0
 	fi
 
-	if [ "$argValue" = "auto" ] || [ "$argValue" = "0" ]
+	if [ "$argOne" = "auto" ] || [ "$argOne" = "0" ]
 	then
 		echo level auto | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
 		exit 0
 	fi
 
-	if [ "$argValue" = "min" ]
+	if [ "$argOne" = "min" ]
 	then
 		echo level 1 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
 		exit 0
 	fi
 
-	if [ "$argValue" = "max" ]
+	if [ "$argOne" = "max" ]
 	then
 		echo level 7 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
 		exit 0
 	fi
 
-	if [[ $argValue =~ $reLevel ]]				#	set desired level of fan in range from 1 to 7
+	if [[ $argOne =~ $reLevel ]]				#	set desired level of fan in range from 1 to 7
 	then
-		echo level $argValue | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		echo level $argOne | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
 		exit 0
 	fi
 
-	if [ "$argValue" = "temp" ] || [ "$argValue" = "temperature" ]  || [ "$argValue" = "thermal" ]
+	if [ "$argOne" = "temp" ] || [ "$argOne" = "temperature" ]  || [ "$argOne" = "thermal" ]
 	then
 		count=${#resultC[@]}
 
@@ -123,7 +124,7 @@ for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line argument
 		exit 0
 	fi
 
-	if [ "$argValue" = "state" ] || [ "$argValue" = "status" ]
+	if [ "$argOne" = "state" ] || [ "$argOne" = "status" ]
 	then
 		if [ ! -z "$fanState" ]					#	check if something has been parsed
 		then
@@ -132,7 +133,7 @@ for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line argument
 		fi
 	fi
 
-	if [ "$argValue" = "speed" ] || [ "$argValue" = "rate" ]
+	if [ "$argOne" = "speed" ] || [ "$argOne" = "rate" ]
 	then
 		if [ ! -z "$fanSpeed" ]					#	check if something has been parsed
 		then
@@ -141,7 +142,7 @@ for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line argument
 		fi
 	fi
 
-	if [ "$argValue" = "level" ]
+	if [ "$argOne" = "level" ]
 	then
 		if [ ! -z "$fanLevel" ]					#	check if something has been parsed
 		then
@@ -149,6 +150,29 @@ for (( i=0;i<$ELEMENTS;i++)); do 				#	iterate through all command line argument
 			exit 0
 		fi
 	fi
-done
+
+	if [ "$argOne" = "timeout" ] || [ "$argOne" = "watchdog" ]
+	then
+		echo watchdog 0 | sudo tee /proc/acpi/ibm/fan
+		exit 0
+	fi
+elif [ $ELEMENTS -eq 2 ]						#	two command line arguments
+then
+	argOne=${args[0]}							#	holds content of first command line argument
+	argTwo=${args[1]}							#	holds content of second command line argument
+	reTimeout='^[0-9]{1,3}$'					#	regex which will match timeout value in range from 0 to 120
+
+	if [ "$argOne" = "timeout" ] || [ "$argOne" = "watchdog" ]
+	then
+		if [[ $argTwo =~ $reTimeout ]]			#	set desired timeout value in range from 0 to 120
+		then
+			if [ $argTwo -le 120 ]
+			then
+				echo watchdog $argTwo | sudo tee /proc/acpi/ibm/fan
+				exit 0
+			fi
+		fi
+	fi
+fi
 
 exit 0
