@@ -16,6 +16,7 @@ if [ $ELEMENTS -eq 0 ]							#	no command line arguments
 then
 	count=${#resultC[@]}
 	tempsCount=${#temps[@]}
+	newLine=false 								#	holds if newline should be printed
 												#	lm-sensors package results have greatest priority
 	if [ $count -gt 0 ]							#	temperatures was obtained using lm-sensors package
 	then
@@ -32,7 +33,7 @@ then
 			fi
 		done
 
-		echo
+		newLine=true
 	elif [ $tempsCount -gt 0 ]					#	temperatures was obtained using system files
 	then
 		types=($(cat /sys/class/thermal/thermal_zone*/type 2> /dev/null))	#	get device types from system files
@@ -45,13 +46,13 @@ then
 
 				if [ "$value" = "x86_pkg_temp" ]	#	handle only the CPU temperature
 				then
-					echo 'Temperatures'					#	print content header
+					echo 'Temperatures'			#	print content header
 					echo '------------'
 
 					valueC=$(echo ${temps[${i}]} | head -c 2 2> /dev/null)
 					valueF=$(echo "($valueC * 9/5) + 32" | bc 2> /dev/null)		#	convert temperature using appropriate formula
 					echo "    CPU 0:   $valueC°C ($valueF°F)"
-					echo
+					newLine=true
 
 					break
 				fi
@@ -59,22 +60,49 @@ then
 		fi
 	fi
 
-	echo 'Fan information'						#	print content header
-	echo '---------------'
+	printState=false							#	holds if fan state value has been parsed
+	printSpeed=false							#	holds if fan speed value has been parsed
+	printLevel=false							#	holds if fan level value has been parsed
 
-	if [ ! -z "$fanState" ]						#	check if something has been parsed
+	if [ ! -z "$fanState" ]						#	check if fan state has been parsed
 	then
-		echo "    State:   $fanState"
+		printState=true
 	fi
 
-	if [ ! -z "$fanSpeed" ]						#	check if something has been parsed
+	if [ ! -z "$fanSpeed" ]						#	check if fan speed has been parsed
 	then
-		echo "    Speed:   $fanSpeed RPM"
+		printSpeed=true
 	fi
 
-	if [ ! -z "$fanLevel" ]						#	check if something has been parsed
+	if [ ! -z "$fanLevel" ]						#	check if fan level has been parsed
 	then
-		echo "    Level:   $fanLevel"
+		printLevel=true
+	fi
+
+	if [ "$printState" = true ] || [ "$printSpeed" = true ] || [ "$printLevel" = true ]		#	check if something has been parsed
+	then
+		if [ "$newLine" = true ]				#	print newline if temperature section has been printed
+		then
+			echo
+		fi
+
+		echo 'Fan information'					#	print content header
+		echo '---------------'
+
+		if [ "$printState" = true ]				#	check if fan state has been parsed
+		then
+			echo "    State:   $fanState"
+		fi
+
+		if [ "$printSpeed" = true ]				#	check if fan speed has been parsed
+		then
+			echo "    Speed:   $fanSpeed RPM"
+		fi
+
+		if [ "$printLevel" = true ]				#	check if fan level has been parsed
+		then
+			echo "    Level:   $fanLevel"
+		fi
 	fi
 
 	exit 0
