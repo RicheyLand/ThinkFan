@@ -15,7 +15,7 @@ Only ThinkPad laptops are fully supported.
 
 ## Dependencies
 
-* Package `lm-sensors` is required for fan control.
+* It is recommended to have `lm-sensors` package installed.
 * Linux kernel with `thinkpad-acpi` support is required.
 
 ## Setup
