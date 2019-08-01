@@ -1,6 +1,6 @@
 #!/bin/bash
 
-temps=($(cat /sys/class/thermal/thermal_zone*/temp))	#	get actual temperatures from system files
+temps=($(cat /sys/class/thermal/thermal_zone*/temp 2> /dev/null))	#	get actual temperatures from system files
 
 args=("$@")										#	store arguments into the array
 ELEMENTS=${#args[@]}							#	get number of arguments
@@ -8,9 +8,9 @@ ELEMENTS=${#args[@]}							#	get number of arguments
 resultC=($(sensors 2> /dev/null | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*C$' | tr '.' '\n' | grep -E '[0-9]$'))
 resultF=($(sensors -f 2> /dev/null | grep -E 'Core' | tr ' ' '\n' | tr '\t' '\n' | tr '+' '\n' | grep -E '[0-9]' | grep -E '.*F$' | tr '.' '\n' | grep -E '[0-9]$'))
 
-fanState=$(cat /proc/acpi/ibm/fan | grep -E '^status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
-fanSpeed=$(cat /proc/acpi/ibm/fan | grep -E '^speed' | tr '\t' '\n' | grep -E '[0-9]+')		#	parse fan speed value
-fanLevel=$(cat /proc/acpi/ibm/fan | grep -E '^level' | tr '\t' '\n' | grep -E '^[0-9]|auto$')	#	parse fan level value
+fanState=$(cat /proc/acpi/ibm/fan 2> /dev/null | grep -E '^status' | tr '\t' '\n' | grep -E 'led')	#	parse fan state value
+fanSpeed=$(cat /proc/acpi/ibm/fan 2> /dev/null | grep -E '^speed' | tr '\t' '\n' | grep -E '[0-9]+')		#	parse fan speed value
+fanLevel=$(cat /proc/acpi/ibm/fan 2> /dev/null | grep -E '^level' | tr '\t' '\n' | grep -E '^[0-9]|auto$')	#	parse fan level value
 
 if [ $ELEMENTS -eq 0 ]							#	no command line arguments
 then
@@ -35,26 +35,27 @@ then
 		echo
 	elif [ $tempsCount -gt 0 ]					#	temperatures was obtained using system files
 	then
-		types=($(cat /sys/class/thermal/thermal_zone*/type))	#	get device types from system files
+		types=($(cat /sys/class/thermal/thermal_zone*/type 2> /dev/null))	#	get device types from system files
 		typesCount=${#types[@]}
 
 		if [ $tempsCount -le $typesCount ]		#	handle index overflow
 		then
-			echo 'Temperatures'					#	print content header
-			echo '------------'
-
 			for (( i=0;i<$typesCount;i++)); do 	#	iterate through the elements of list
 				value=${types[${i}]}
 
 				if [ "$value" = "x86_pkg_temp" ]	#	handle only the CPU temperature
 				then
-					valueC=$(echo ${temps[${i}]} | head -c 2)
-					valueF=$(echo "($valueC * 9/5) + 32" | bc)	#	convert temperature using appropriate formula
+					echo 'Temperatures'					#	print content header
+					echo '------------'
+
+					valueC=$(echo ${temps[${i}]} | head -c 2 2> /dev/null)
+					valueF=$(echo "($valueC * 9/5) + 32" | bc 2> /dev/null)		#	convert temperature using appropriate formula
 					echo "    CPU 0:   $valueC°C ($valueF°F)"
+					echo
+
+					break
 				fi
 			done
-
-			echo
 		fi
 	fi
 
@@ -115,25 +116,25 @@ then
 
 	if [ "$argOne" = "auto" ] || [ "$argOne" = "0" ]
 	then
-		echo level auto | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		echo level auto 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null 	#	write value into the appropriate system file
 		exit 0
 	fi
 
 	if [ "$argOne" = "min" ]
 	then
-		echo level 1 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		echo level 1 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null 	#	write value into the appropriate system file
 		exit 0
 	fi
 
 	if [ "$argOne" = "max" ]
 	then
-		echo level 7 | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		echo level 7 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null 	#	write value into the appropriate system file
 		exit 0
 	fi
 
 	if [[ $argOne =~ $reLevel ]]				#	set desired level of fan in range from 1 to 7
 	then
-		echo level $argOne | sudo tee /proc/acpi/ibm/fan 	#	write value into the appropriate system file
+		echo level $argOne 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null 	#	write value into the appropriate system file
 		exit 0
 	fi
 
@@ -155,7 +156,7 @@ then
 			done
 		elif [ $tempsCount -gt 0 ]				#	temperatures was obtained using system files
 		then
-			types=($(cat /sys/class/thermal/thermal_zone*/type))	#	get device types from system files
+			types=($(cat /sys/class/thermal/thermal_zone*/type 2> /dev/null))	#	get device types from system files
 			typesCount=${#types[@]}
 
 			if [ $tempsCount -le $typesCount ]	#	handle index overflow
@@ -165,9 +166,11 @@ then
 
 					if [ "$value" = "x86_pkg_temp" ]	#	handle only the CPU temperature
 					then
-						valueC=$(echo ${temps[${i}]} | head -c 2)
-						valueF=$(echo "($valueC * 9/5) + 32" | bc)	#	convert temperature using appropriate formula
+						valueC=$(echo ${temps[${i}]} | head -c 2 2> /dev/null)
+						valueF=$(echo "($valueC * 9/5) + 32" | bc 2> /dev/null)		#	convert temperature using appropriate formula
 						echo "CPU 0:   $valueC°C ($valueF°F)"
+
+						break
 					fi
 				done
 			fi
@@ -205,7 +208,7 @@ then
 
 	if [ "$argOne" = "timeout" ] || [ "$argOne" = "watchdog" ]
 	then
-		echo watchdog 0 | sudo tee /proc/acpi/ibm/fan
+		echo watchdog 0 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null
 		exit 0
 	fi
 elif [ $ELEMENTS -eq 2 ]						#	two command line arguments
@@ -220,7 +223,7 @@ then
 		then
 			if [ $argTwo -le 120 ]
 			then
-				echo watchdog $argTwo | sudo tee /proc/acpi/ibm/fan
+				echo watchdog $argTwo 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null
 				exit 0
 			fi
 		fi
