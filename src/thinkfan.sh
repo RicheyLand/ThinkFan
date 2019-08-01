@@ -129,15 +129,15 @@ then
 		echo '  thinkfan level      ->  print current fan level value'
 		echo '  thinkfan timeout    ->  disable fan timeout'
 		echo '  thinkfan timeout N  ->  set fan timeout in range from 0 to 120 seconds'
+		echo '  thinkfan install    ->  perform required fan control installation'
 		echo
 		echo 'DEPENDENCIES'
 		echo '  It is recommended to have lm-sensors package installed'
 		echo '  Linux kernel with thinkpad-acpi support is required'
 		echo
 		echo 'SETUP'
-		echo '  Open this file as a root: /etc/modprobe.d/thinkpad_acpi.conf'
-		echo '  Add this line: options thinkpad_acpi fan_control=1'
-		echo '  Save changes and reboot computer'
+		echo '  Run program with install option'
+		echo '  Restart the computer'
 		echo '  Run program'
 		exit 0
 	fi
@@ -239,6 +239,19 @@ then
 		echo watchdog 0 2> /dev/null | sudo tee /proc/acpi/ibm/fan 2> /dev/null
 		exit 0
 	fi
+
+	if [ "$argOne" = "install" ]				#	install fan control program
+	then 										#	content must be written into the system file before using fan control
+		sudo echo 'options thinkpad_acpi fan_control=1' > /etc/modprobe.d/thinkpad_acpi.conf
+
+		if [ $? -eq 0 ]
+		then
+			exit 0								#	file write was successful
+		else
+			exit 1								#	file write was unsuccessful
+		fi
+	fi
+
 elif [ $ELEMENTS -eq 2 ]						#	two command line arguments
 then
 	argOne=${args[0]}							#	holds content of first command line argument

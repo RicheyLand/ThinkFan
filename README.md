@@ -20,7 +20,6 @@ Only ThinkPad laptops are fully supported.
 
 ## Setup
 
-* Open file `/etc/modprobe.d/thinkpad_acpi.conf` as a root.
-* Add this content: `options thinkpad_acpi fan_control=1`.
-* Save changes and reboot computer.
+* Run program with `install` option.
+* Restart the computer.
 * Run program.
