@@ -242,7 +242,7 @@ then
 
 	if [ "$argOne" = "install" ]				#	install fan control program
 	then 										#	content must be written into the system file before using fan control
-		sudo echo 'options thinkpad_acpi fan_control=1' > /etc/modprobe.d/thinkpad_acpi.conf
+		echo 'options thinkpad_acpi fan_control=1' | sudo tee /etc/modprobe.d/thinkpad_acpi.conf
 
 		if [ $? -eq 0 ]
 		then
